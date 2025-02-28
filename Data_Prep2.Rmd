@@ -1,0 +1,80 @@
+---
+title: "Data_Prep2"
+author: "Dawn Koh"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+#reading the TypeScript file from source: https://github.com/horensen/sg-areas/blob/main/src/data/subzones.ts
+ts_file <- readLines("subzones.ts")
+
+# combining lines into one long string
+ts_data <- paste(ts_file, collapse = " ")
+```
+
+```{r}
+#Defining regex patterns to extract subzones
+
+pattern_subzone <- "\\[Subzone\\.([A-Z_]+)\\]:"
+# Extract and clean subzone names
+matches <- str_match_all(ts_data, pattern_subzone)[[1]][, 2]
+
+# Format as "Subzone: [Name]"
+formatted_subzones <- paste("Subzone:", matches)
+
+# Print results
+print(formatted_subzones)
+
+```
+
+
+```{r}
+# defining regex patterns to extract area names
+
+pattern_name <- 'name:\\s*\\{\\s*en:\\s*"([^"]+)"'
+
+# Extract and clean the names
+matches <- str_match_all(ts_data, pattern_name)[[1]][, 2]
+
+# Format as "name: [Name]"
+formatted_names <- paste("name:", matches)
+
+# Print results
+print(formatted_names)
+
+```
+
+```{r}
+# defining regex patterns to extract longitude and latitude coordinate names
+
+pattern_coordinates <- "coordinates: \\{ latitude: (.*?), longitude: (.*?) \\}"
+
+coordinates <- str_extract_all(ts_data, pattern_coordinates)[[1]]
+
+print(coordinates)
+
+```
+
+
+```{r}
+# defining regex patterns to extract planning area
+
+pattern_area <- "area: Area\\.([A-Z_]+),"
+
+# Extract and clean area names
+matches <- str_match_all(ts_data, pattern_area)[[1]][, 2]
+
+# Format as "Area: [Name]"
+formatted_areas <- paste("Area:", matches)
+
+# Print results
+print(formatted_areas)
+
+
+```
