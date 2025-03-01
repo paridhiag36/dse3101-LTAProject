@@ -1,0 +1,86 @@
+---
+title: "Data_Prep1"
+author: "Agarwal Paridhi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(purrr)
+```
+
+```{r, include = FALSE}
+# Reading in sheet T7(Total) from the excel file as a dataframe. 
+# This file contains the names of all planning areas and subzones in SG that we plan to work with.
+
+data <- read_excel("t1-9.xls", sheet = "T7(Total)", skip = 4) %>%
+  as.data.frame() %>%
+  select(2,3) %>%
+  filter(!row_number() %in% c(2:4, 36:43, 45, 79:86, 88, 121:129, 131, 
+                              167:173, 175, 209:217, 219, 253:261, 263, 
+                              297:305, 307, 340:349, 351, 381:393, 395, 
+                              430:437, 439, 471:481, 483, 506:507)) #getting rid of rows 2-4, 36-43, 45, 79-86, 88,     121-129, 131, 167-173, 175, 209-217, 219, 253-261, 263, 297-305, 307, 340-349, 351, 381-393, 395, 430-437, 439, 471-481, 483,    506-507
+```
+
+```{r}
+# identifying rows where "Planning Area" and "Subzone" are present
+split_indices <- which(data[, 1] == "Planning Area" & data[, 2] == "Subzone")
+
+# grouping column to identify where the splits should occur
+data <- data %>%
+  mutate(group = cumsum(row_number() %in% split_indices))
+
+# splitting the data based on the 'group' column
+df_split <- data %>%
+  group_by(group) %>%
+  group_split()
+
+# removing the grouping column from the resulting list of dataframes
+df_split <- lapply(df_split, function(x) select(x, -group))
+```
+
+```{r}
+# function to process tables one by one in the df_split list
+process_table <- function(df) {
+  col1_name <- colnames(df)[1]   # extracting first column name
+  col2_name <- colnames(df)[2]   # extracting second column name
+
+  # filling the missing values in df
+  df <- df %>%
+    fill(col1_name, .direction = "down")
+
+  # filtering out rows where column 2 contains "Total" or where column 1 is "Planning Area" and column 2 is "Subzone"
+  df_final <- df %>%
+    filter(!(grepl("Total", .[[col2_name]]) | 
+             (.[[col1_name]] == "Planning Area" & .[[col2_name]] == "Subzone"))) %>%
+    rename(PA = 1, SZ = 2) 
+
+  # Returning the final dataframe
+  return(df_final)
+}
+```
+
+```{r}
+# applying the process_table function to each dataframe in df_split
+processed_tables <- map(df_split, process_table)
+```
+```{r}
+# combining all processed tables by row
+final_table <- bind_rows(processed_tables)
+
+# since the original data was broken down into tables, some subzones from prev tables happened to fall in the following table, therefore, making edits for the same.
+
+final_table <- final_table %>%
+  mutate(PA = ifelse(PA == "Planning Area", NA, PA)) %>%
+  fill(PA, .direction = "down")
+```
+
+```{r}
+# writing final_table created in csv
+write.csv(final_table, "PA_SZ.csv", row.names = FALSE)
+
+```
+
