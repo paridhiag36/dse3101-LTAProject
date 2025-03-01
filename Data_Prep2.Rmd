@@ -11,7 +11,7 @@ library(stringr)
 ```
 
 ```{r}
-#reading the TypeScript file from source: https://github.com/horensen/sg-areas/blob/main/src/data/subzones.ts
+# reading the TypeScript file from source: https://github.com/horensen/sg-areas/blob/main/src/data/subzones.ts
 ts_file <- readLines("subzones.ts")
 
 # combining lines into one long string
@@ -19,62 +19,51 @@ ts_data <- paste(ts_file, collapse = " ")
 ```
 
 ```{r}
-#Defining regex patterns to extract subzones
-
+# defining regex patterns to extract subzones
 pattern_subzone <- "\\[Subzone\\.([A-Z_]+)\\]:"
-# Extract and clean subzone names
-matches <- str_match_all(ts_data, pattern_subzone)[[1]][, 2]
-
-# Format as "Subzone: [Name]"
-formatted_subzones <- paste("Subzone:", matches)
-
-# Print results
-print(formatted_subzones)
+# extracting and cleaning subzone names
+subzone_matches <- str_match_all(ts_data, pattern_subzone)[[1]][, 2]
+print(head(subzone_matches))
 
 ```
 
 
 ```{r}
 # defining regex patterns to extract area names
-
 pattern_name <- 'name:\\s*\\{\\s*en:\\s*"([^"]+)"'
-
-# Extract and clean the names
-matches <- str_match_all(ts_data, pattern_name)[[1]][, 2]
-
-# Format as "name: [Name]"
-formatted_names <- paste("name:", matches)
-
-# Print results
-print(formatted_names)
+# extracting and cleaning the names
+name_matches <- str_match_all(ts_data, pattern_name)[[1]][, 2]
+print(head(name_matches))
 
 ```
 
 ```{r}
 # defining regex patterns to extract longitude and latitude coordinate names
-
 pattern_coordinates <- "coordinates: \\{ latitude: (.*?), longitude: (.*?) \\}"
+coordinate_matches <- str_extract_all(ts_data, pattern_coordinates)[[1]]
 
-coordinates <- str_extract_all(ts_data, pattern_coordinates)[[1]]
+# extracting latitude and longitude values separtely here
+# latitudes = 
+# longitudes = 
 
-print(coordinates)
+#print(head(latitudes))
+#print(head(longitudes))
 
 ```
 
 
 ```{r}
 # defining regex patterns to extract planning area
-
-pattern_area <- "area: Area\\.([A-Z_]+),"
-
-# Extract and clean area names
-matches <- str_match_all(ts_data, pattern_area)[[1]][, 2]
-
-# Format as "Area: [Name]"
-formatted_areas <- paste("Area:", matches)
-
-# Print results
-print(formatted_areas)
-
-
+pattern_pa <- "area: Area\\.([A-Z_]+),"
+# extracting and cleaning area names
+pa_matches <- str_match_all(ts_data, pattern_pa)[[1]][, 2]
+print(head(pa_matches))
 ```
+
+```{r}
+# create df here with subzone, planning area, latitude, longitude, and name.
+# MAKE SURE THE LENGTH OF ALL VARS IS EQUAL AND U CANT JUST TAKE MINIMUM- find out what is gng wrong
+
+# once df looks good use write.csv to write it down- if unsure, dont make this chnage.
+```
+
