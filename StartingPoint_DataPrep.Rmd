@@ -1,0 +1,103 @@
+---
+title: "DataJoined"
+author: "Agarwal Paridhi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(stringr)
+```
+
+```{r setup, include=FALSE}
+# reading the two csvs created in DataPrep1 and DataPrep2
+data_prep1_df <- read.csv("PA_SZ.csv")
+data_prep2_df <- read.csv("subzones_cleaned.csv")
+
+str(data_prep1_df)  # shows structure of all columns in data_prep1_df
+str(data_prep2_df)  # shows structure of all columns in data_prep2_df
+```
+
+```{r}
+unique_spaces_prep1 <- data_prep1_df %>% filter(grepl("^\\s|\\s$", `PA`))
+unique_spaces_prep2 <- data_prep2_df %>% filter(grepl("^\\s|\\s$", `Planning_Area`))
+
+if (nrow(unique_spaces_prep1) > 0 || nrow(unique_spaces_prep2) > 0) {
+  cat("Some PA names have leading/trailing spaces.\n")
+}
+
+# extracting unique PA names from both datasets
+PA_1 <- data_prep1_df %>% select(PA) %>% distinct() %>% arrange(`PA`)
+PA_2 <- data_prep2_df %>% select(Planning_Area) %>% distinct() %>% arrange(`Planning_Area`)
+
+# finding differences
+PA_not_in_2 <- setdiff(PA_1$PA, PA_2$Planning_Area)  # PA names in data_prep1_df but not in data_prep2_df
+PA_not_in_1 <- setdiff(PA_2$PA, PA_1$Planning_Area)  # PA names in data_prep2_df but not in data_prep1_df
+
+# printing results
+cat("PA names in data_prep1_df but NOT in data_prep2_df:\n", PA_not_in_2, "\n")
+cat("PA names in data_prep2_df but NOT in data_prep1_df:\n", PA_not_in_1, "\n")
+```
+
+
+```{r}
+# we see that there are two planning areas in data_prep1 that we don't have the representative latitude/longtude for in the database extracted from ts file online. Let's extract the subzones for these two PAs (North-Eastern Islands and Western Islands)
+
+missing_subzones <- data_prep1_df %>% 
+  filter(PA %in% PA_not_in_2) %>%  # Filter for missing PAs
+  distinct() %>%                    # Remove duplicates
+  arrange(PA, SZ)     
+
+print(missing_subzones)
+
+# The four subzones are North-Eastern Islands, Jurong Island and Bukom, Semakau and Sudong. Since it is just four values and we can't get their representative coordinates online, we will drop them from data_prep1_df. The aim of this was to check if the PA and SZ names from teh two sources match. Now that they do, we can drop the fpur values and create first final dataset with planning area names, subzone names and their representative latitudes and longitudes with start points.
+
+```
+
+```{r}
+# dropping rows from data_prep1_df where PA and Subzone are in the missing subzones list
+data_prep1_df <- data_prep1_df %>%
+  filter(!(PA %in% PA_not_in_2 ))
+
+```
+
+```{r}
+# now, we check if all remaining PA and SZ combinations in the two dfs are the same
+
+# extracting unique PA and SZ combinations from both dataframes
+PA_SZ_1 <- data_prep1_df%>%
+  select(PA, SZ) %>%
+  distinct() %>%
+  arrange(PA, SZ)
+
+PA_SZ_2 <- data_prep2_df%>%
+  select(Planning_Area, Subzone_Name) %>%
+  distinct() %>%
+  arrange(Planning_Area, Subzone_Name)
+
+# checking if the two combinations are the same
+all_equal <- identical(PA_SZ_1, PA_SZ_2)
+
+if (all_equal) {
+  cat("All PA and SZ combinations match between the two datasets.\n")
+} else {
+  cat("There are discrepancies in PA and SZ combinations between the two datasets.\n")
+}
+# we see no discrepancies in PA and SZ combinations between the two datasets. Finally, we can use data_prep2_df with planning area, subzone_name and representative latitude, longtitude as our base dataset for starting point values.
+```
+
+```{r}
+# Preparing the base dataset using data_prep2_df
+startingpoint_df <- data_prep2_df %>%
+  select(Planning_Area, Subzone_Name, Latitude, Longitude) %>%
+  rename(Subzone = Subzone_Name) %>% # rename Subzone_Name to Subzone
+  distinct() %>%  # Remove duplicate rows if any
+  arrange(Planning_Area, Subzone)
+
+# On using distinct, we lose one obs and go from 319 to 318 entries. This happens because of observations 143 and 144 for Kallang, subzone: Tanjong Rhu which are duplicates.
+
+# Writing startingpoint_df created in csv
+write.csv(startingpoint_df, "starting_point.csv", row.names = FALSE)
+```
+
