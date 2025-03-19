@@ -1,0 +1,106 @@
+---
+title: "DistanceHeuristic"
+author: "Agarwal Paridhi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+```{r, include=FALSE}
+library(readr)
+library(readxl)
+library(dplyr)
+```
+
+```{r setup, include=FALSE}
+haversine_distance <- function(lat1, lon1, lat2, lon2) {
+  R <- 6371  # Earth radius in kilometers
+  
+  # Convert degrees to radians
+  lat1 <- lat1 * pi / 180
+  lon1 <- lon1 * pi / 180
+  lat2 <- lat2 * pi / 180
+  lon2 <- lon2 * pi / 180
+  
+  # Differences in coordinates
+  dlat <- lat2 - lat1
+  dlon <- lon2 - lon1
+  
+  # Haversine formula
+  a <- sin(dlat / 2)^2 + cos(lat1) * cos(lat2) * sin(dlon / 2)^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  
+  # Distance in km
+  distance <- R * c
+  return(distance)
+}
+
+```
+
+```{r}
+# Read CSV and Excel files
+subzone_df <- read.csv("starting_point.csv")
+polyclinic_df <- read_excel("SG Public Hospitals & Polyclinics.xlsx")
+```
+
+```{r}
+# create an empty dataframe for storing results
+SZ_HospPoly_df <- data.frame(Planning_Area = character(),
+                    Subzone = character(),
+                    Subzone_Lat = numeric(),
+                    Subzone_Long = numeric(),
+                    Polyclinic = character(),
+                    Polyclinic_Lat = numeric(),
+                    Polyclinic_Long = numeric(),
+                    Distance_km = numeric(),
+                    stringsAsFactors = FALSE)
+
+# nested loop to compute distances for all combinations
+for (i in 1:nrow(subzone_df)) 
+  {
+  for (j in 1:nrow(polyclinic_df)) 
+    {
+    
+    # Extract subzone details
+    planning_area <- subzone_df$Planning_Area[i]
+    subzone <- subzone_df$Subzone[i]
+    subzone_lat <- subzone_df$Latitude[i]
+    subzone_long <- subzone_df$Longitude[i]
+    
+    # Extract polyclinic details
+    polyclinic <- polyclinic_df$`Healthcare Facility`[j]
+    polyclinic_lat <- polyclinic_df$Latitude[j]
+    polyclinic_long <- polyclinic_df$Longitude[j]
+    
+    # Calculate Haversine distance
+    distance <- haversine_distance(subzone_lat, subzone_long, polyclinic_lat, polyclinic_long)
+    
+    # Append row to FINAL dataset
+    SZ_HospPoly_df <- rbind(SZ_HospPoly_df, data.frame(Planning_Area = planning_area,
+                                     Subzone = subzone,
+                                     Subzone_Lat = subzone_lat,
+                                     Subzone_Long = subzone_long,
+                                     Polyclinic = polyclinic,
+                                     Polyclinic_Lat = polyclinic_lat,
+                                     Polyclinic_Long = polyclinic_long,
+                                     Distance_km = distance))
+  }
+}
+
+
+
+```
+
+
+
+```{r}
+# Process the dataset
+SZ_HospPoly_top5_df<- SZ_HospPoly_df %>%
+  group_by(Planning_Area, Subzone) %>%   # Group by Planning Area and Subzone
+  arrange(Distance_km, .by_group = TRUE) %>%  # Arrange in ascending order of Distance_km within groups
+  slice_head(n = 5) %>%   # Keep only the top 5 values per group
+  ungroup()  # Remove grouping for further operations
+
+# View the result
+head(SZ_HospPoly_top5_df)
+
+```
+
