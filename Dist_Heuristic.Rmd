@@ -11,24 +11,25 @@ library(dplyr)
 ```
 
 ```{r setup, include=FALSE}
+# haversine distance function that calculates shortest straight line dist between any two points on the earth
 haversine_distance <- function(lat1, lon1, lat2, lon2) {
-  R <- 6371  # Earth radius in kilometers
+  R <- 6371  # earth's radius in kilometers
   
-  # Convert degrees to radians
+  # converting degrees to radians
   lat1 <- lat1 * pi / 180
   lon1 <- lon1 * pi / 180
   lat2 <- lat2 * pi / 180
   lon2 <- lon2 * pi / 180
   
-  # Differences in coordinates
+  # differences in coordinates
   dlat <- lat2 - lat1
   dlon <- lon2 - lon1
   
-  # Haversine formula
+  # haversine formula
   a <- sin(dlat / 2)^2 + cos(lat1) * cos(lat2) * sin(dlon / 2)^2
   c <- 2 * atan2(sqrt(a), sqrt(1 - a))
   
-  # Distance in km
+  # distance in km
   distance <- R * c
   return(distance)
 }
@@ -36,51 +37,51 @@ haversine_distance <- function(lat1, lon1, lat2, lon2) {
 ```
 
 ```{r}
-# Read CSV and Excel files
+# reading in CSV and Excel files for subzones (start point) and hospitals/polyclinics (end point)
 subzone_df <- read.csv("starting_point.csv")
-polyclinic_df <- read_excel("SG Public Hospitals & Polyclinics.xlsx")
+hospital_polyclinic_df <- read_excel("SG Public Hospitals & Polyclinics.xlsx")
 ```
 
 ```{r}
-# create an empty dataframe for storing results
+# creating an empty dataframe for storing results
 SZ_HospPoly_df <- data.frame(Planning_Area = character(),
                     Subzone = character(),
                     Subzone_Lat = numeric(),
                     Subzone_Long = numeric(),
-                    Polyclinic = character(),
-                    Polyclinic_Lat = numeric(),
-                    Polyclinic_Long = numeric(),
+                    Hospital_Polyclinic = character(),
+                    Hospital_Polyclinic_Lat = numeric(),
+                    Hospital_Polyclinic_Long = numeric(),
                     Distance_km = numeric(),
                     stringsAsFactors = FALSE)
 
 # nested loop to compute distances for all combinations
 for (i in 1:nrow(subzone_df)) 
   {
-  for (j in 1:nrow(polyclinic_df)) 
+  for (j in 1:nrow(hospital_polyclinic_df)) 
     {
     
-    # Extract subzone details
+    # extracting subzone details
     planning_area <- subzone_df$Planning_Area[i]
     subzone <- subzone_df$Subzone[i]
     subzone_lat <- subzone_df$Latitude[i]
     subzone_long <- subzone_df$Longitude[i]
     
-    # Extract polyclinic details
-    polyclinic <- polyclinic_df$`Healthcare Facility`[j]
-    polyclinic_lat <- polyclinic_df$Latitude[j]
-    polyclinic_long <- polyclinic_df$Longitude[j]
+    # extracting hospital/polyclinic details
+    hospital_polyclinic <- hospital_polyclinic_df$`Healthcare Facility`[j]
+    hospital_polyclinic_lat <- hospital_polyclinic_df$Latitude[j]
+    hospital_polyclinic_long <- hospital_polyclinic_df$Longitude[j]
     
-    # Calculate Haversine distance
-    distance <- haversine_distance(subzone_lat, subzone_long, polyclinic_lat, polyclinic_long)
+    # calculating Haversine distance
+    distance <- haversine_distance(subzone_lat, subzone_long, hospital_polyclinic_lat, hospital_polyclinic_long)
     
-    # Append row to FINAL dataset
+    # appending row to the dataset
     SZ_HospPoly_df <- rbind(SZ_HospPoly_df, data.frame(Planning_Area = planning_area,
                                      Subzone = subzone,
                                      Subzone_Lat = subzone_lat,
                                      Subzone_Long = subzone_long,
-                                     Polyclinic = polyclinic,
-                                     Polyclinic_Lat = polyclinic_lat,
-                                     Polyclinic_Long = polyclinic_long,
+                                     Hospital_Polyclinic = hospital_polyclinic,
+                                     Hospital_Polyclinic_Lat = hospital_polyclinic_lat,
+                                     Hospital_Polyclinic_Long = hospital_polyclinic_long,
                                      Distance_km = distance))
   }
 }
@@ -92,15 +93,19 @@ for (i in 1:nrow(subzone_df))
 
 
 ```{r}
-# Process the dataset
+# processing the dataset to get top 5 polyclinics/hospitals for each subzone
 SZ_HospPoly_top5_df<- SZ_HospPoly_df %>%
   group_by(Planning_Area, Subzone) %>%   # Group by Planning Area and Subzone
   arrange(Distance_km, .by_group = TRUE) %>%  # Arrange in ascending order of Distance_km within groups
   slice_head(n = 5) %>%   # Keep only the top 5 values per group
   ungroup()  # Remove grouping for further operations
 
-# View the result
+# checking the result
 head(SZ_HospPoly_top5_df)
 
+```
+```{r}
+# writing SZ_HospPoly_top5_df created in csv
+write.csv(SZ_HospPoly_top5_df, "top5_healthcare.csv", row.names = FALSE)
 ```
 
