@@ -1,0 +1,82 @@
+---
+title: "Subzone_Boundaries_Dataset"
+author: "Nitya Ramasamy"
+date: "2025-03-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This code is for preparing the subzones_boundaries dataset which will be used for ggplot heatmap plotting. 
+#The SUBZONES_N variable corresponds to Subzone variable in api_data
+
+
+TO RUN:
+ensure 'raw_subzones.geojson' is in working directory
+
+
+```{r}
+library(sf)
+library(tidyverse)
+library(ggplot2)
+
+```
+
+
+```{r}
+
+
+# geojson data source :  https://data.gov.sg/datasets?query=subzones&page=1&resultId=d_8594ae9ff96d0c708bc2af633048edfb
+sg_subzones <- st_read("subzones.geojson")
+
+
+
+#This code is to split the data in the Description variable to separate columns
+
+description <- sg_subzones[[2]] 
+
+# Function to extract key-value pairs using stringr
+extract_data_from_html <- function(html_str) {
+  
+  # Extract the keys (from <th> tags)
+  keys <- str_extract_all(html_str, "(?<=<th>)(.*?)(?=</th>)")[[1]]
+  
+  # Extract the values (from <td> tags)
+  values <- str_extract_all(html_str, "(?<=<td>)(.*?)(?=</td>)")[[1]]
+  
+  # Combine keys and values into a named vector
+  data <- setNames(values, keys)
+  
+  return(data)
+}
+
+# Extract data for all rows
+extracted_data <- lapply(description, extract_data_from_html)
+
+# Convert the extracted data into a tibble (data frame)
+result_tibble <- bind_rows(extracted_data) %>%
+  as_tibble()
+
+
+subzone_boundaries <- bind_cols(sg_subzones, result_tibble) %>%
+
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == 'ONE NORTH', 'ONENORTH', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == 'BAYFRONT SUBZONE', 'BAYFRONT', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == 'MARINA EAST (MP)', 'MARINA EAST', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == "NATIONAL UNIVERSITY OF S'PORE", 'NATIONAL UNIVERSITY OF SINGAPORE', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == "CENTRAL SUBZONE", 'CENTRAL', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == "SERANGOON NORTH IND ESTATE", 'SERANGOON NORTH INDUSTRIAL ESTATE', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == "MARINA EAST" & PLN_AREA_N=='MARINE PARADE', 'MARINA EAST (MARINE PARADE)', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == "LAKESIDE (LEISURE)" | SUBZONE_N=='LAKESIDE (BUSINESS)', 'LAKESIDE', SUBZONE_N)) %>%
+  mutate(SUBZONE_N = ifelse(SUBZONE_N == "MURAI", 'WESTERN WATER CATCHMENT', SUBZONE_N)) 
+
+
+
+rm(result_tibble)
+rm(extracted_data)
+rm(sg_subzones)
+rm(description)
+
+```
