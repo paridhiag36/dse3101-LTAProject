@@ -79,4 +79,7 @@ rm(extracted_data)
 rm(sg_subzones)
 rm(description)
 
+st_write(subzone_boundaries, "subzone_boundaries.geojson")
+
+
 ```
