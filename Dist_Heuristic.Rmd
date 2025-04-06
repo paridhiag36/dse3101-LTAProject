@@ -86,7 +86,7 @@ for (i in 1:nrow(subzone_df))
   }
 }
 
-
+write.csv(SZ_HospPoly_df, "heuristic_distance.csv", row.names = FALSE)
 
 ```
 
