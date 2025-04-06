@@ -15,15 +15,15 @@ import time  # For sleep functionality
 file_path = "/Users/paridhiagarwal/dse3101-LTAProject/top5_healthcare.csv"
 df = pd.read_csv(file_path)
 
-# Filter the dataset to include rows 576 to 1075 only, planning areas from Jurong East to Queenstown
-df = df.iloc[575:1075]
+# Filter the dataset to include rows 581 to 1080 only, planning areas from Jurong East to Queenstown
+df = df.iloc[580:1080]
 
 # API endpoint
 base_url = "https://www.onemap.gov.sg/api/public/routingsvc/route"
 
 # Authorization header
 headers = {
-    "Authorization": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZDdkYzYyYWZmMDI0ZWU2NGIzZmY1MjMwYTJhYzUxMSIsImlzcyI6Imh0dHA6Ly9pbnRlcm5hbC1hbGItb20tcHJkZXppdC1pdC1uZXctMTYzMzc5OTU0Mi5hcC1zb3V0aGVhc3QtMS5lbGIuYW1hem9uYXdzLmNvbS9hcGkvdjIvdXNlci9wYXNzd29yZCIsImlhdCI6MTc0Mjg4NzQ1NywiZXhwIjoxNzQzMTQ2NjU3LCJuYmYiOjE3NDI4ODc0NTcsImp0aSI6InkzWEU4NllNSEY4NnVMTzMiLCJ1c2VyX2lkIjo2MDY1LCJmb3JldmVyIjpmYWxzZX0.9QktvMZZy7oaQOeu3j1An-cOhDLltZTAbpumPEbgcQ0"
+    "Authorization": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZDdkYzYyYWZmMDI0ZWU2NGIzZmY1MjMwYTJhYzUxMSIsImlzcyI6Imh0dHA6Ly9pbnRlcm5hbC1hbGItb20tcHJkZXppdC1pdC1uZXctMTYzMzc5OTU0Mi5hcC1zb3V0aGVhc3QtMS5lbGIuYW1hem9uYXdzLmNvbS9hcGkvdjIvdXNlci9wYXNzd29yZCIsImlhdCI6MTc0MzkxNDY0NywiZXhwIjoxNzQ0MTczODQ3LCJuYmYiOjE3NDM5MTQ2NDcsImp0aSI6IkRpRjBaT3pNd0hiYXJaMXQiLCJ1c2VyX2lkIjo2MDY1LCJmb3JldmVyIjpmYWxzZX0.jgu0H2SoAIMP8v217jCwminx79X3PjOYwFZiYuf_gSI"
 }
 
 # Create an empty list to store results
@@ -36,6 +36,7 @@ for index, row in df.iterrows():
     end_lat, end_long = row["Hospital_Polyclinic_Lat"], row["Hospital_Polyclinic_Long"]
     subzone_name = row["Subzone"]
     hospital_name = row["Hospital_Polyclinic"]  
+    heuristic_dist = row["Distance_km"]
     
     # Time configurations, weekday, weekend, non-peak and peak hours
     time_configs = [
@@ -77,6 +78,7 @@ for index, row in df.iterrows():
                         "WalkDistance (m)": walk_distance,
                         "Transfers": transfers,
                         "TransitTime (min)": transit_time_minutes,
+                        "Heuristic Distance (km)" : heuristic_dist,
                         "Weekend": weekend,
                         "Peak Hour": peak
                     })
