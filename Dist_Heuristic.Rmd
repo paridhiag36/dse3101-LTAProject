@@ -38,7 +38,7 @@ haversine_distance <- function(lat1, lon1, lat2, lon2) {
 
 ```{r}
 # reading in CSV and Excel files for subzones (start point) and hospitals/polyclinics (end point)
-subzone_df <- read.csv("starting_point.csv")
+subzone_df <- read.csv("starting_point_final.csv")
 hospital_polyclinic_df <- read_excel("SG Public Hospitals & Polyclinics.xlsx")
 ```
 
@@ -86,7 +86,7 @@ for (i in 1:nrow(subzone_df))
   }
 }
 
-
+write.csv(SZ_HospPoly_df, "heuristic_distance.csv", row.names = FALSE)
 
 ```
 

@@ -1,0 +1,105 @@
+---
+title: "Planning Area Demographics"
+author: "Dawn Koh"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(readr)
+library(stringr)
+
+# Load the dataset
+df <- read_csv("C:\\Users\\dawnk\\OneDrive\\Documents\\dse3101-LTAProject\\ResidentPopulationbyPlanningAreaSubzoneofResidenceAgeGroupandSexCensusofPopulation2020.csv")
+```
+
+
+```{r}
+# Convert all numeric columns (Total, Males, and Females) to proper numeric format
+numeric_cols_total <- c("Total_0_4", "Total_5_9", "Total_10_14", 
+                        "Total_15_19", "Total_20_24", "Total_25_29", 
+                        "Total_30_34", "Total_35_39", "Total_40_44", 
+                        "Total_45_49", "Total_50_54", "Total_55_59", 
+                        "Total_60_64", "Total_65_69", "Total_70_74", 
+                        "Total_75_79", "Total_80_84", "Total_85_89", "Total_90andOver")
+
+numeric_cols_male <- c("Males_0_4", "Males_5_9", "Males_10_14", 
+                        "Males_15_19", "Males_20_24", "Males_25_29", 
+                        "Males_30_34", "Males_35_39", "Males_40_44", 
+                        "Males_45_49", "Males_50_54", "Males_55_59", 
+                        "Males_60_64", "Males_65_69", "Males_70_74", 
+                        "Males_75_79", "Males_80_84", "Males_85_89", "Males_90andOver")
+
+numeric_cols_female <- c("Females_0_4", "Females_5_9", "Females_10_14", 
+                          "Females_15_19", "Females_20_24", "Females_25_29", 
+                          "Females_30_34", "Females_35_39", "Females_40_44", 
+                          "Females_45_49", "Females_50_54", "Females_55_59", 
+                          "Females_60_64", "Females_65_69", "Females_70_74", 
+                          "Females_75_79", "Females_80_84", "Females_85_89", "Females_90andOver")
+
+# Convert to numeric (removing commas)
+df <- df %>%
+  mutate(across(all_of(c(numeric_cols_total, numeric_cols_male, numeric_cols_female)), 
+                ~as.numeric(gsub(",", "", .)), .names = "{.col}"))
+```
+
+
+```{r}
+# Filter rows ending with '- Total' to get only Planning Area totals
+df_total <- df %>%
+  rename(`Planning Area` = `Number`) %>%
+  filter(str_ends(`Planning Area`, "- Total"))
+
+# Summing the population into 3 groups for Total, Males, and Females
+df_grouped <- df_total %>%
+  mutate(
+    `Total 0-14` = rowSums(across(all_of(c("Total_0_4", "Total_5_9", "Total_10_14"))), na.rm = TRUE),
+    `Total 15-64` = rowSums(across(all_of(c("Total_15_19", "Total_20_24", "Total_25_29", 
+                                            "Total_30_34", "Total_35_39", "Total_40_44", 
+                                            "Total_45_49", "Total_50_54", "Total_55_59", 
+                                            "Total_60_64"))), na.rm = TRUE),
+    `Total 65+` = rowSums(across(all_of(c("Total_65_69", "Total_70_74", "Total_75_79", 
+                                          "Total_80_84", "Total_85_89", "Total_90andOver"))), na.rm = TRUE),
+    
+    `Males 0-14` = rowSums(across(all_of(c("Males_0_4", "Males_5_9", "Males_10_14"))), na.rm = TRUE),
+    `Males 15-64` = rowSums(across(all_of(c("Males_15_19", "Males_20_24", "Males_25_29", 
+                                            "Males_30_34", "Males_35_39", "Males_40_44", 
+                                            "Males_45_49", "Males_50_54", "Males_55_59", 
+                                            "Males_60_64"))), na.rm = TRUE),
+    `Males 65+` = rowSums(across(all_of(c("Males_65_69", "Males_70_74", "Males_75_79", 
+                                          "Males_80_84", "Males_85_89", "Males_90andOver"))), na.rm = TRUE),
+    
+    `Females 0-14` = rowSums(across(all_of(c("Females_0_4", "Females_5_9", "Females_10_14"))), na.rm = TRUE),
+    `Females 15-64` = rowSums(across(all_of(c("Females_15_19", "Females_20_24", "Females_25_29", 
+                                              "Females_30_34", "Females_35_39", "Females_40_44", 
+                                              "Females_45_49", "Females_50_54", "Females_55_59", 
+                                              "Females_60_64"))), na.rm = TRUE),
+    `Females 65+` = rowSums(across(all_of(c("Females_65_69", "Females_70_74", "Females_75_79", 
+                                            "Females_80_84", "Females_85_89", "Females_90andOver"))), na.rm = TRUE)
+  ) %>%
+  select(`Planning Area`, `Total_Total`,`Total 0-14`, `Total 15-64`, `Total 65+`, `Males_Total`,
+         `Males 0-14`, `Males 15-64`, `Males 65+`, `Females_Total`,
+         `Females 0-14`, `Females 15-64`, `Females 65+`) # Keep only relevant columns
+
+# Remove the ' - Total' part from the 'Planning Area' column
+df_grouped <- df_grouped %>%
+  mutate(`Planning Area` = str_remove(`Planning Area`, " ?- Total"))
+
+
+
+# Display the final dataset
+print(df_grouped)
+
+
+```
+
+```{r}
+write.csv(df_grouped, "C:\\Users\\dawnk\\OneDrive\\Documents\\dse3101-LTAProject\\planning_area_demographics.csv", row.names = FALSE)
+
+```
+

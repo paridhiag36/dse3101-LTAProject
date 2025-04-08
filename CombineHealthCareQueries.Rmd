@@ -1,0 +1,78 @@
+---
+title: "trial"
+author: "Agarwal Paridhi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(stringr)
+
+```
+
+
+```{r setup, include=FALSE}
+# Read the CSV files
+query_1 <- read.csv("AngMoKio_updatedquery1.csv")
+query_2 <- read.csv("Bedok_updatedquery1.csv")
+query_3 <- read.csv("Bishan_updatedquery1.csv")
+query_4 <- read.csv("BoonLay_updatedquery1.csv")
+query_5 <- read.csv("BukitBatok_updatedquery1.csv")
+query_6 <- read.csv("BukitMerah_updatedquery1.csv")
+query_7 <- read.csv("BukitPanjang_updatedquery1.csv")
+query_8 <- read.csv("Bukit Timah - Clementi.csv")
+query_9 <- read.csv("Downtown Core - Rochor.csv")
+query_10 <- read.csv("Seletar-Serangoon query.csv")
+query_11 <- read.csv("Simpang-Toa Payoh query.csv")
+query_12 <- read.csv("Simpang-Toa Payoh query.csv")
+query_13 <- read.csv("Tuas-Yishun_updatedquery.csv")
+```
+
+
+```{r setup, include=FALSE}
+# Combine the data frames (assuming they have the same columns)
+combined_df_healthcare <- rbind(query_1, query_2, query_3, query_4, query_5, query_6, query_7, query_8, query_9, query_10, query_11, query_12, query_13)
+
+colnames(combined_df_healthcare)
+
+```
+
+
+```{r setup, include=FALSE}
+# Change colnames
+combined_df_healthcare <- combined_df_healthcare %>%
+  rename(
+    `Duration (min)` = `Duration..min.`,
+    `WalkTime (min)` = `WalkTime..min.`,
+    `WalkDistance (m)` = `WalkDistance..m.`,
+    `TransitTime (m)` = `TransitTime..min.`,
+    `HeuristicDistance (km)` = `Heuristic.Distance..km.`,
+    PeriodName = Period.Name,
+    ChosenTime = Time,
+    PublicHoliday = Public.Holiday
+  ) %>%
+  select(-Day.Type, -Peak.Hour) %>%
+  mutate(
+    PeakHour = if_else(str_ends(PeriodName, "Peak"), 1, 0)
+  )
+
+# Write the combined data frame to a new CSV file
+write.csv(combined_df_healthcare, "healthcareUpdatedQuery_onemap.csv", row.names = FALSE)
+```
+
+
+```{r}
+str(combined_df_healthcare)
+numeric_cols <- c("Duration (min)", "WalkTime (min)", "WalkDistance (m)", 
+                  "Transfers", "TransitTime (m)", "HeuristicDistance (km)")
+
+# Apply min-max normalization
+combined_df_healthcare <- combined_df_healthcare %>%
+  mutate(across(all_of(numeric_cols), ~ (. - min(.)) / (max(.) - min(.))))
+
+# Write the combined data frame to a new CSV file
+write.csv(combined_df_healthcare, "healthcareUpdatedQueryNormalised_onemap.csv", row.names = FALSE)
+```
+
