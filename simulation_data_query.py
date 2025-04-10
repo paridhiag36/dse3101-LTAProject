@@ -161,6 +161,6 @@ for index, row in df.iterrows():
 results_df = pd.DataFrame(results)
 
 # Save results to CSV
-output_path = "simulation_final.csv"
+output_path = "full_simulation.csv"
 results_df.to_csv(output_path, index=False)
 print(f"Results saved to {output_path}")
