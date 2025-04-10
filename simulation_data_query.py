@@ -12,13 +12,14 @@ import requests
 import time  # For sleep functionality
 
 # Load the top5_healthcare CSV file
-file_path = "top5_healthcare_3.csv"
+file_path = "top5_healthcare.csv"
 df = pd.read_csv(file_path)
 
 # Filter the dataset to include rows 1 to 580 only, planning areas from Ang Mo Kio to Hougang.
-df = df.iloc[0:580]
+#df = df.iloc[1500:]
 
-# API endpoint
+
+
 base_url = "https://www.onemap.gov.sg/api/public/routingsvc/route"
 
 # Authorization header
@@ -35,8 +36,10 @@ def f(x):
     return x['transitLeg']
 counter=0
 for index, row in df.iterrows():
-    print(counter)
+
     counter+=1
+    print(counter)
+
 
     
     planning_area_name = row["Planning_Area"]
@@ -45,6 +48,8 @@ for index, row in df.iterrows():
     subzone_name = row["Subzone"]
     hospital_name = row["Hospital_Polyclinic"]  
     heuristic_dist = row["Distance_km"]
+
+
     
     # Time configurations, weekday, weekend, non-peak and peak hours
     
@@ -54,7 +59,7 @@ for index, row in df.iterrows():
     peak=0
     
     
-    query_url = f"{base_url}?start={start_lat},{start_long}&end={end_lat},{end_long}&routeType=pt&date={date}&time={time_str}&mode=RAIL&numItineraries=1"
+    query_url = f"{base_url}?start={start_lat},{start_long}&end={end_lat},{end_long}&routeType=pt&date={date}&time={time_str}&mode=TRANSIT&numItineraries=1"
     response = requests.get(query_url, headers=headers)
         
     if response.status_code == 429:
@@ -64,7 +69,7 @@ for index, row in df.iterrows():
         
     if response.status_code == 200:
         data = response.json()
-        #print(data)
+
         
         if "plan" in data and "itineraries" in data["plan"]:
             itinerary_num=0
@@ -95,9 +100,15 @@ for index, row in df.iterrows():
                 itinerary_num+=1
                 if 'legs' in itinerary:
                     transit_leg = list(map(f, itinerary['legs']))
+                    
                     if len(transit_leg)>0 and transit_leg is not None and any(transit_leg):
                         first_true = next((i for i, value in enumerate(transit_leg) if value), None)
                         last_true = len(transit_leg) - 1 - next((i for i, value in enumerate(reversed(transit_leg)) if value), None)
+                        first_type= itinerary['legs'][first_true]['mode']
+                        last_type=itinerary['legs'][last_true]['mode']
+
+                        row['first_type']=first_type
+                        row['last_type']=last_type
                         if len(itinerary['legs'][first_true]['intermediateStops'])>0:
                             row['first_stop_name']=itinerary['legs'][first_true]['intermediateStops'][0]['name']
                             row['first_stop_long']=itinerary['legs'][first_true]['intermediateStops'][0]['lon']
@@ -105,6 +116,8 @@ for index, row in df.iterrows():
                             row['last_stop_name']='no value'
                             row['last_stop_long']='no value'
                             row['last_stop_lat']='no value'
+                            row['first_type']=itinerary['legs'][first_true]['mode']
+                            
                             
 
                         else:
@@ -148,6 +161,6 @@ for index, row in df.iterrows():
 results_df = pd.DataFrame(results)
 
 # Save results to CSV
-output_path = "healthcare_query3.csv"
+output_path = "simulation_final.csv"
 results_df.to_csv(output_path, index=False)
 print(f"Results saved to {output_path}")
